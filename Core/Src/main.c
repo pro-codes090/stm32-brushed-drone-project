@@ -57,6 +57,8 @@ UART_HandleTypeDef huart2;
 MPU_Accl_Val_t Accl_Data ;
 MPU_Gyro_Val_t Gyro_Data ;
 MPU_Gyro_calib_t Gyro_Calib;
+lora_pins_t lora_pins;		// Structure variable for lora pins
+lora_t lora;				// Structure variable for lora
 
 /* USER CODE END PV */
 
@@ -71,17 +73,11 @@ static void MX_TIM2_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 void fc_powerup();
-
+void config_wireless();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void __io_putchar(int ch) {
-//	ITM_SendChar(ch) ;
-	HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -140,6 +136,8 @@ HAL_Init();
    //
    //printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
 
+   // config your wirelss module such as a lora module
+   config_wireless();
 
   /* USER CODE END 2 */
 
@@ -512,23 +510,48 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void  fc_powerup(){
-	  HAL_UART_Transmit(&huart2, (uint8_t *)"running ", 9, HAL_MAX_DELAY) ;
 
-	  for (uint8_t i = 0;  i < 3; i++) {
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0) ;
-	  HAL_Delay(100) ;
-	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1) ;
-	  HAL_Delay(100) ;
-	  }
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 , RESET) ;
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1 , RESET) ;
+//	  for (uint8_t i = 0;  i < 3; i++) {
+//	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0) ;
+//	  HAL_Delay(100) ;
+//	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1) ;
+//	  HAL_Delay(100) ;
+//	  }
+//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 , RESET) ;
+//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1 , RESET) ;
+
+}
+
+void config_wireless(){
+	lora_pins.dio0.port  = LORA_DIO0_PORT;
+	lora_pins.dio0.pin   = LORA_DIO0_PIN;
+	lora_pins.nss.port   = LORA_SS_PORT;	// NSS pin to which port is connected
+	lora_pins.nss.pin    = LORA_SS_PIN;		// NSS pin to which pin is connected
+	lora_pins.reset.port = LORA_RESET_PORT;	// RESET pin to which port is connected
+	lora_pins.reset.pin  = LORA_RESET_PIN;	// RESET pin to which pin is connected
+	lora_pins.spi  			 = &hspi1;
+	lora.pin = &lora_pins;
+	lora.frequency = FREQ_433MHZ;	// 433MHZ Frequency
+
+	while(lora_init(&lora)){										// Initialize the lora module
+	printf("init Failed \n");
+	HAL_Delay(1000);
+	}
+	printf("init success \n");
+
 
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
-
+// for pid calculations
 }
+
+void __io_putchar(int ch) {
+//	ITM_SendChar(ch) ;
+	HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+}
+
 
 /* USER CODE END 4 */
 
