@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "mpu6050_driver.h"
-#include "lora_sx1278.h"
+#include "lora.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,9 +57,6 @@ UART_HandleTypeDef huart2;
 MPU_Accl_Val_t Accl_Data ;
 MPU_Gyro_Val_t Gyro_Data ;
 MPU_Gyro_calib_t Gyro_Calib;
-
-uint8_t tx_data[254] = "HELLO WORLD" ;
-uint8_t rx_data[254] ;
 
 /* USER CODE END PV */
 
@@ -126,19 +123,23 @@ HAL_Init();
   HAL_Init();
 
 //  fc_powerup();
-
    Self_test_mpu6050(&hi2c1) ;
    Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
    gyro_calibrate(&hi2c1,  &Gyro_Calib);
 
-   HAL_TIM_Base_Init(&htim2) ;
-   HAL_TIM_Base_Start_IT(&htim2) ;
-//
+//   HAL_TIM_Base_Init(&htim2) ;
+//   HAL_TIM_Base_Start_IT(&htim2) ;
+
 //   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 //   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 //   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
 //   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-   Sx1278_Init(&hspi1);
+// to be enabled
+   //get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+   //get_Accl(&hi2c1, &Accl_Data) ;
+   //
+   //printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
+
 
   /* USER CODE END 2 */
 
@@ -146,18 +147,12 @@ HAL_Init();
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
-//get_Accl(&hi2c1, &Accl_Data) ;
-//
-//printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
-		 Sx1278_send(&hspi1, tx_data, 254) ;
-		 Sx1278_start_rx(&hspi1) ;
-		 HAL_Delay(200) ;
-		 Sx1278_recieve(&hspi1 , rx_data) ;
-
 
   }
   /* USER CODE END 3 */

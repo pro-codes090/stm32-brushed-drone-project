@@ -27,7 +27,7 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h \
  ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h \
  C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/mpu6050_driver/mpu6050_driver.h \
- C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/sx1278_lora/lora_sx1278.h
+ C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/sx1278_lora/lora.h
 ../Core/Inc/main.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h:
 ../Core/Inc/stm32f1xx_hal_conf.h:
@@ -57,4 +57,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h:
 ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h:
 C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/mpu6050_driver/mpu6050_driver.h:
-C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/sx1278_lora/lora_sx1278.h:
+C:/Users/pro/Desktop/stm32projectshal/drone_swarn_project/sx1278_lora/lora.h:

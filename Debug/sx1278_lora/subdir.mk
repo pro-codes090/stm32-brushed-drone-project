@@ -5,13 +5,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../sx1278_lora/lora_sx1278.c 
+../sx1278_lora/lora.c 
 
 OBJS += \
-./sx1278_lora/lora_sx1278.o 
+./sx1278_lora/lora.o 
 
 C_DEPS += \
-./sx1278_lora/lora_sx1278.d 
+./sx1278_lora/lora.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
@@ -21,7 +21,7 @@ sx1278_lora/%.o sx1278_lora/%.su sx1278_lora/%.cyclo: ../sx1278_lora/%.c sx1278_
 clean: clean-sx1278_lora
 
 clean-sx1278_lora:
-	-$(RM) ./sx1278_lora/lora_sx1278.cyclo ./sx1278_lora/lora_sx1278.d ./sx1278_lora/lora_sx1278.o ./sx1278_lora/lora_sx1278.su
+	-$(RM) ./sx1278_lora/lora.cyclo ./sx1278_lora/lora.d ./sx1278_lora/lora.o ./sx1278_lora/lora.su
 
 .PHONY: clean-sx1278_lora
 
