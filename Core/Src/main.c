@@ -138,6 +138,8 @@ HAL_Init();
 
    // config your wirelss module such as a lora module
    config_wireless();
+	uint8_t ret = 0  ;
+	char buff [15] = "hello world \n" ;
 
   /* USER CODE END 2 */
 
@@ -147,6 +149,22 @@ HAL_Init();
   {
 
 
+	  lora_begin_packet(&lora);
+	  lora_tx(&lora, (uint8_t *)buff, strlen(buff));
+	  lora_end_packet(&lora);
+	  printf("sending \n");
+	  HAL_Delay(1);
+	  ret = lora_prasePacket(&lora);
+	  if(ret){
+		uint8_t i=0;
+		while( i <  2){
+		buff[i] = lora_read(&lora);
+		i++;
+	     }
+		buff[i] ='\0'
+				;
+		printf("%s \n", buff);
+	  }
 
     /* USER CODE END WHILE */
 
