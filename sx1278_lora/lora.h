@@ -56,12 +56,12 @@
 
 #define MAX_PKT_LENGTH           255
 
-#define LORA_SS_PIN    GPIO_PIN_15
-#define LORA_RESET_PIN GPIO_PIN_4
+#define LORA_SS_PIN    GPIO_PIN_4
+#define LORA_RESET_PIN GPIO_PIN_9
 #define LORA_DIO0_PIN  GPIO_PIN_5
 
 #define LORA_SS_PORT    GPIOA
-#define LORA_RESET_PORT GPIOE
+#define LORA_RESET_PORT GPIOB
 #define LORA_DIO0_PORT  GPIOE
 
 typedef struct {
