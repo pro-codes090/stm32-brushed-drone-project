@@ -59,6 +59,9 @@ MPU_Gyro_Val_t Gyro_Data ;
 MPU_Gyro_calib_t Gyro_Calib;
 lora_pins_t lora_pins;		// Structure variable for lora pins
 lora_t lora;				// Structure variable for lora
+uint8_t ret = 0  ;
+
+char buff [15] = {0} ;
 
 /* USER CODE END PV */
 
@@ -74,6 +77,7 @@ static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 void fc_powerup();
 void config_wireless();
+void rcv_channel();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,12 +120,10 @@ HAL_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_Init();
-
 //  fc_powerup();
-   Self_test_mpu6050(&hi2c1) ;
-   Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
-   gyro_calibrate(&hi2c1,  &Gyro_Calib);
+//   Self_test_mpu6050(&hi2c1) ;
+//   Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
+//   gyro_calibrate(&hi2c1,  &Gyro_Calib);
 
 //   HAL_TIM_Base_Init(&htim2) ;
 //   HAL_TIM_Base_Start_IT(&htim2) ;
@@ -138,8 +140,6 @@ HAL_Init();
 
    // config your wirelss module such as a lora module
    config_wireless();
-	uint8_t ret = 0  ;
-	char buff [15] = "hello world \n" ;
 
   /* USER CODE END 2 */
 
@@ -153,17 +153,29 @@ HAL_Init();
 //	  lora_end_packet(&lora);
 //	  printf("sending \n");
 //	  HAL_Delay(1);
+//	  rcv_channel();
+	  uint16_t data1 = 0 ;
+	  uint16_t data2 = 0 ;
+	  uint16_t data3 = 0 ;
+	  uint16_t data4 = 0 ;
+
 	  ret = lora_prasePacket(&lora);
 	  if(ret){
 		uint8_t i=0;
-		while( i <  2){
+		while( i <  8){
 		buff[i] = lora_read(&lora);
 		i++;
 	     }
-		buff[i] ='\0'
-				;
-		printf("%s \n", buff);
+//		buff[i] ='\0';
+		data1 = buff[1] << 8 | buff[0] ;
+		data2 = buff[3] << 8 | buff[2] ;
+		data3 = buff[5] << 8 | buff[4] ;
+		data4 = buff[7] << 8 | buff[6] ;
+
+		printf("data1 : %d  ,data2 : %d  ,data3 : %d   ,data4 : %d  \n" , data1,data2,data3,data4) ;
+
 	  }
+
 
     /* USER CODE END WHILE */
 
@@ -190,7 +202,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -202,10 +214,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -268,7 +280,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -516,7 +528,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);
 
   /*Configure GPIO pin : PA4 */
   GPIO_InitStruct.Pin = GPIO_PIN_4;
@@ -529,7 +541,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -570,8 +582,22 @@ void config_wireless(){
 	}
 	printf("init success \n");
 
+}
+
+void rcv_channel(){
+	  ret = lora_prasePacket(&lora);
+	  if(ret){
+		uint8_t i=0;
+		while( i <  10){
+		buff[i] = lora_read(&lora);
+		i++;
+	     }
+		buff[i] ='\0';
+		printf("%d \n" , buff[0]) ;
+	  }
 
 }
+
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 

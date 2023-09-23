@@ -62,7 +62,7 @@
 
 #define LORA_SS_PORT    GPIOA
 #define LORA_RESET_PORT GPIOB
-#define LORA_DIO0_PORT  GPIOE
+#define LORA_DIO0_PORT  GPIOB
 
 typedef struct {
 	int pin;
