@@ -71,6 +71,8 @@ uint8_t ret = 0  ;
 
 char buff [15] = {0} ;
 
+transmitter_chanels_t recived_channels = {0} ;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -148,6 +150,19 @@ HAL_Init();
 
    // config your wirelss module such as a lora module
    config_wireless();
+   // recieve the channels
+	for (uint8_t i = 0;  i < 10; i++) {
+	  ret = lora_prasePacket(&lora);
+	  if(ret){
+		uint8_t i=0;
+		while( i <  8){
+		buff[i] = lora_read(&lora);
+		i++;
+		 }
+		printf("%s \n" , buff);
+	  }
+	}
+
 
   /* USER CODE END 2 */
 
@@ -155,35 +170,15 @@ HAL_Init();
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  rcv_channel();
 
+		recived_channels.Roll    = buff[1] << 8 | buff[0] ;
+		recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
+		recived_channels.Throtle = buff[5] << 8 | buff[4] ;
+		recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
 
-//	  lora_begin_packet(&lora);
-//	  lora_tx(&lora, (uint8_t *)buff, strlen(buff));
-//	  lora_end_packet(&lora);
-//	  printf("sending \n");
-//	  HAL_Delay(1);
-//	  rcv_channel();
-	  uint16_t data1 = 0 ;
-	  uint16_t data2 = 0 ;
-	  uint16_t data3 = 0 ;
-	  uint16_t data4 = 0 ;
-
-	  ret = lora_prasePacket(&lora);
-	  if(ret){
-		uint8_t i=0;
-		while( i <  8){
-		buff[i] = lora_read(&lora);
-		i++;
-	     }
-//		buff[i] ='\0';
-		data1 = buff[1] << 8 | buff[0] ;
-		data2 = buff[3] << 8 | buff[2] ;
-		data3 = buff[5] << 8 | buff[4] ;
-		data4 = buff[7] << 8 | buff[6] ;
-
-		printf("data1 : %d  ,data2 : %d  ,data3 : %d   ,data4 : %d  \n" , data1,data2,data3,data4) ;
-
-	  }
+		printf("data1 : %d  ,data2 : %d  ,data3 : %d   ,data4 : %d  \n" , recived_channels.Roll , recived_channels.Pitch,
+																		  recived_channels.Throtle ,recived_channels.Yaw) ;
 
 
     /* USER CODE END WHILE */
@@ -594,15 +589,14 @@ void config_wireless(){
 }
 
 void rcv_channel(){
+
 	  ret = lora_prasePacket(&lora);
 	  if(ret){
 		uint8_t i=0;
-		while( i <  10){
+		while( i <  sizeof(recived_channels)){
 		buff[i] = lora_read(&lora);
 		i++;
 	     }
-		buff[i] ='\0';
-		printf("%d \n" , buff[0]) ;
 	  }
 
 }
