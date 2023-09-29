@@ -1,5 +1,0 @@
-../mpu6050_driver/mpu6050_driver.c:14:6:Self_test_mpu6050	80	static
-../mpu6050_driver/mpu6050_driver.c:88:6:Mpu6050_Init	40	static
-../mpu6050_driver/mpu6050_driver.c:168:6:get_Accl	48	static
-../mpu6050_driver/mpu6050_driver.c:193:6:get_gyro	64	static
-../mpu6050_driver/mpu6050_driver.c:217:6:gyro_calibrate	104	static

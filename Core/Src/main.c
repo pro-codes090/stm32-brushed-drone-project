@@ -29,6 +29,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef struct {
+
+	int16_t Roll ;
+	int16_t Pitch ;
+	uint16_t Throtle ;
+	int16_t Yaw ;
+
+}transmitter_chanels_t ;
 
 /* USER CODE END PTD */
 
@@ -147,6 +155,7 @@ HAL_Init();
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
 
 //	  lora_begin_packet(&lora);
 //	  lora_tx(&lora, (uint8_t *)buff, strlen(buff));
