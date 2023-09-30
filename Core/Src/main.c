@@ -69,7 +69,7 @@ lora_pins_t lora_pins;		// Structure variable for lora pins
 lora_t lora;				// Structure variable for lora
 uint8_t ret = 0  ;
 
-char buff [15] = {0} ;
+uint8_t buff [15] = {0} ;
 
 transmitter_chanels_t recived_channels = {0} ;
 
@@ -151,6 +151,10 @@ HAL_Init();
    // config your wirelss module such as a lora module
    config_wireless();
    // recieve the channels
+   printf("recieving dummy \n") ;
+   HAL_Delay(1000) ;
+   HAL_Delay(1000) ;
+
 	for (uint8_t i = 0;  i < 10; i++) {
 	  ret = lora_prasePacket(&lora);
 	  if(ret){
@@ -160,9 +164,9 @@ HAL_Init();
 		i++;
 		 }
 		printf("%s \n" , buff);
+		HAL_Delay(10);
 	  }
 	}
-
 
   /* USER CODE END 2 */
 
@@ -172,14 +176,13 @@ HAL_Init();
   {
 	  rcv_channel();
 
-		recived_channels.Roll    = buff[1] << 8 | buff[0] ;
-		recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
-		recived_channels.Throtle = buff[5] << 8 | buff[4] ;
-		recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
+	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
+	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
+	recived_channels.Throtle = buff[5] << 8 | buff[4] ;
+	recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
 
-		printf("data1 : %d  ,data2 : %d  ,data3 : %d   ,data4 : %d  \n" , recived_channels.Roll , recived_channels.Pitch,
+	printf("data1 : %hi  ,data2 : %hi  ,data3 : %hi   ,data4 : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
 																		  recived_channels.Throtle ,recived_channels.Yaw) ;
-
 
     /* USER CODE END WHILE */
 
