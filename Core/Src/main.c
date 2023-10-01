@@ -88,6 +88,10 @@ static void MX_SPI1_Init(void);
 void fc_powerup();
 void config_wireless();
 void rcv_channel();
+void config_motors() ;
+void config_gyro() ;
+void wait_for_pair() ;
+void check_if_under_range() ;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -117,7 +121,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-HAL_Init();
+  HAL_Init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -130,44 +134,11 @@ HAL_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-//  fc_powerup();
-//   Self_test_mpu6050(&hi2c1) ;
-//   Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
-//   gyro_calibrate(&hi2c1,  &Gyro_Calib);
-
-//   HAL_TIM_Base_Init(&htim2) ;
-//   HAL_TIM_Base_Start_IT(&htim2) ;
-
-//   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-//   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
-//   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
-//   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-// to be enabled
-   //get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
-   //get_Accl(&hi2c1, &Accl_Data) ;
-   //
-   //printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
-
-   // config your wirelss module such as a lora module
-   config_wireless();
-   // recieve the channels
-   printf("recieving dummy \n") ;
-   HAL_Delay(1000) ;
-   HAL_Delay(1000) ;
-
-	for (uint8_t i = 0;  i < 10; i++) {
-	  ret = lora_prasePacket(&lora);
-	  if(ret){
-		uint8_t i=0;
-		while( i <  8){
-		buff[i] = lora_read(&lora);
-		i++;
-		 }
-		printf("%s \n" , buff);
-		HAL_Delay(10);
-	  }
-	}
-
+// fc_powerup();
+// config_gyro();
+// config_motors();
+// config_wireless();
+// wait_for_pair();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -175,6 +146,7 @@ HAL_Init();
   while (1)
   {
 	  rcv_channel();
+	  check_if_under_range() ;
 
 	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
 	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
@@ -209,7 +181,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI_DIV2;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL8;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -221,10 +193,10 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -287,7 +259,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -400,7 +372,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 100;
+  htim2.Init.Prescaler = 1000;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 6400;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -448,7 +420,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 100;
+  htim3.Init.Prescaler = 1000;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 32000;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -560,18 +532,51 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void  fc_powerup(){
+// turn the white and red led ON for a bit
+	__HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 ,0);
+	__HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_4 ,0);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3) ;
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4) ;
+	HAL_Delay(1000) ;
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3) ;
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_4) ;
 
-//	  for (uint8_t i = 0;  i < 3; i++) {
-//	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0) ;
-//	  HAL_Delay(100) ;
-//	  HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_1) ;
-//	  HAL_Delay(100) ;
-//	  }
-//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 , RESET) ;
-//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1 , RESET) ;
+	__HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 ,32000);
+	__HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_4 ,32000);
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3) ;
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4) ;
+	HAL_Delay(1000) ;
+	HAL_Delay(1000) ;
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_3) ;
+	HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_4) ;
 
 }
 
+void config_motors() {
+   HAL_TIM_Base_Init(&htim2) ;
+   HAL_TIM_Base_Start_IT(&htim2) ;
+
+   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
+}
+void config_gyro() {
+   Self_test_mpu6050(&hi2c1) ;
+   Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
+   gyro_calibrate(&hi2c1,  &Gyro_Calib);
+
+}
+void wait_for_pair() {
+// keep receiving data
+// look for a special value of 32 bits
+// send the ack back to the transmitter
+// show the indication
+}
+void check_if_under_range() {
+
+}
 void config_wireless(){
 	lora_pins.dio0.port  = LORA_DIO0_PORT;
 	lora_pins.dio0.pin   = LORA_DIO0_PIN;
