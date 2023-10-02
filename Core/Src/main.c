@@ -65,12 +65,13 @@ UART_HandleTypeDef huart2;
 MPU_Accl_Val_t Accl_Data ;
 MPU_Gyro_Val_t Gyro_Data ;
 MPU_Gyro_calib_t Gyro_Calib;
+
+// lora related varaibles
 lora_pins_t lora_pins;		// Structure variable for lora pins
 lora_t lora;				// Structure variable for lora
-uint8_t ret = 0  ;
-
-uint8_t buff [15] = {0} ;
-
+uint8_t ret = 0  ;			// captures the return value from the functions in lora lib
+uint8_t buff [15] = {0} ; //buffer to accumulate all the data
+// raw transmitter received values
 transmitter_chanels_t recived_channels = {0} ;
 
 /* USER CODE END PV */
@@ -138,7 +139,7 @@ int main(void)
  config_gyro();
  config_motors();
  config_wireless();
-// wait_for_pair();
+ wait_for_pair();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -604,7 +605,30 @@ void config_gyro() {
 
 }
 void wait_for_pair() {
-// keep receiving data
+uint8_t Key [4] = {0xAA ,0xBB , 0xCC ,0xDD };
+uint8_t ret = 0 ;
+uint8_t temp_buff [4] = {0} ;
+
+while(1){
+
+  lora_begin_packet(&lora);
+  lora_tx(&lora, Key, 4);
+  lora_end_packet(&lora);
+//  printf("drone paring \n");
+
+  ret = lora_prasePacket(&lora);
+  if(ret){
+	uint8_t i=0;
+	while( i <  4){
+	temp_buff[i] = lora_read(&lora);
+	i++;
+     }
+
+	printf("%x  %x  %x  %x  \n" , temp_buff[0] , temp_buff[1] , temp_buff[2] , temp_buff[3]   ) ;
+  }
+
+}
+
 // look for a special value of 32 bits
 // send the ack back to the transmitter
 // show the indication
