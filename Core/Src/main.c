@@ -134,10 +134,10 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-// fc_powerup();
-// config_gyro();
-// config_motors();
-// config_wireless();
+ fc_powerup();
+ config_gyro();
+ config_motors();
+ config_wireless();
 // wait_for_pair();
   /* USER CODE END 2 */
 
@@ -145,16 +145,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  rcv_channel();
-	  check_if_under_range() ;
+	     get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+	     get_Accl(&hi2c1, &Accl_Data) ;
 
-	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
-	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
-	recived_channels.Throtle = buff[5] << 8 | buff[4] ;
-	recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
+	     printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
 
-	printf("data1 : %hi  ,data2 : %hi  ,data3 : %hi   ,data4 : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
-																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+
+//	  rcv_channel();
+//	  check_if_under_range() ;
+//
+//	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
+//	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
+//	recived_channels.Throtle = buff[5] << 8 | buff[4] ;
+//	recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
+//
+//	printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
+//																		  recived_channels.Throtle ,recived_channels.Yaw) ;
 
     /* USER CODE END WHILE */
 
@@ -294,9 +300,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 100;
+  htim1.Init.Prescaler = 500;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 6400;
+  htim1.Init.Period = 64;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -372,12 +378,12 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1000;
+  htim2.Init.Prescaler = 500;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 6400;
+  htim2.Init.Period = 64;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_OC_Init(&htim2) != HAL_OK)
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -387,17 +393,33 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_TIMING;
-  sConfigOC.Pulse = 0;
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 160;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 80;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 40;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.Pulse = 20;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -553,13 +575,26 @@ void  fc_powerup(){
 }
 
 void config_motors() {
-   HAL_TIM_Base_Init(&htim2) ;
-   HAL_TIM_Base_Start_IT(&htim2) ;
+
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,5) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,7) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,9) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,11) ;
 
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+
+   HAL_Delay(1000) ;
+   HAL_Delay(1000) ;
+   HAL_Delay(1000) ;
+
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,0) ;
+
 
 }
 void config_gyro() {

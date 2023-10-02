@@ -64,7 +64,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-
+#define MOTOR_TIMER TIM1
+#define LED_TIMER TIM3
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
