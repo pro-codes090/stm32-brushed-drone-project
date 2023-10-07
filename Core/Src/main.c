@@ -146,22 +146,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	     get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
-	     get_Accl(&hi2c1, &Accl_Data) ;
 
-	     printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
-
-
-//	  rcv_channel();
-//	  check_if_under_range() ;
-//
-//	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
-//	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
-//	recived_channels.Throtle = buff[5] << 8 | buff[4] ;
-//	recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
-//
-//	printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
-//																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+	  rcv_channel();
+//	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
+//	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
 
     /* USER CODE END WHILE */
 
@@ -328,7 +316,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 6400;
+  sConfigOC.Pulse = 0;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
@@ -577,17 +565,16 @@ void  fc_powerup(){
 
 void config_motors() {
 
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,5) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,7) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,9) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,11) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,10) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,10) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,10) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,10) ;
 
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 
-   HAL_Delay(1000) ;
    HAL_Delay(1000) ;
    HAL_Delay(1000) ;
 
@@ -611,28 +598,30 @@ uint8_t temp_buff [4] = {0} ;
 
 while(1){
 
-  lora_begin_packet(&lora);
-  lora_tx(&lora, Key, 4);
-  lora_end_packet(&lora);
-//  printf("drone paring \n");
-
   ret = lora_prasePacket(&lora);
   if(ret){
 	uint8_t i=0;
 	while( i <  4){
 	temp_buff[i] = lora_read(&lora);
 	i++;
-     }
-
+    }
 	printf("%x  %x  %x  %x  \n" , temp_buff[0] , temp_buff[1] , temp_buff[2] , temp_buff[3]   ) ;
   }
+  if (memcmp(Key , temp_buff , 4) == 0) {
+	printf("key matched \n ") ;
+	HAL_Delay(1000) ;
+	HAL_Delay(1000) ;
+
+  break ;
+  }
+  printf("looking for pair ") ;
+ }
+
+printf("done paring  \n") ;
+HAL_Delay(1000) ;
 
 }
 
-// look for a special value of 32 bits
-// send the ack back to the transmitter
-// show the indication
-}
 void check_if_under_range() {
 
 }
@@ -665,6 +654,12 @@ void rcv_channel(){
 		i++;
 	     }
 	  }
+
+	recived_channels.Roll    = buff[1] << 8 | buff[0] ;
+	recived_channels.Pitch   = buff[3] << 8 | buff[2] ;
+	recived_channels.Throtle = buff[5] << 8 | buff[4] ;
+	recived_channels.Yaw     = buff[7] << 8 | buff[6] ;
+
 
 }
 
