@@ -148,9 +148,9 @@ int main(void)
   {
 
 	  rcv_channel();
-//	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
-//	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
-
+	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
+	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+fjsdflkdsfh
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -565,10 +565,10 @@ void  fc_powerup(){
 
 void config_motors() {
 
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,10) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,10) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,10) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,10) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,0) ;
+   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,0) ;
 
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -578,17 +578,18 @@ void config_motors() {
    HAL_Delay(1000) ;
    HAL_Delay(1000) ;
 
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1,0) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2,0) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3,0) ;
-   __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4,0) ;
-
-
 }
 void config_gyro() {
    Self_test_mpu6050(&hi2c1) ;
    Mpu6050_Init(&hi2c1) ;			//initalise gyroscope
    gyro_calibrate(&hi2c1,  &Gyro_Calib);
+
+   get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+   get_Accl(&hi2c1, &Accl_Data) ;
+   // take 200 readings from the imu
+   for (uint8_t i = 0 ; i < 200 ; i++){
+	     printf(" %0.2lf , %0.2lf , %0.2lf ,%0.2lf , %0.2lf , %0.2lf \r" , Gyro_Data.pitch , Gyro_Data.roll, Gyro_Data.yaw , Accl_Data.pitch , Accl_Data.roll, Accl_Data.yaw);
+	     }
 
 }
 void wait_for_pair() {
