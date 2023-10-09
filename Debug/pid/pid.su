@@ -1,0 +1,2 @@
+../pid/pid.c:11:6:pid_init	16	static
+../pid/pid.c:21:7:pid_update	40	static

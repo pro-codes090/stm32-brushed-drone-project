@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include "mpu6050_driver.h"
 #include "lora.h"
+#include "pid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,6 +74,10 @@ uint8_t ret = 0  ;			// captures the return value from the functions in lora lib
 uint8_t buff [15] = {0} ; //buffer to accumulate all the data
 // raw transmitter received values
 transmitter_chanels_t recived_channels = {0} ;
+
+pidController_t yaw_pidController = {0};
+pidController_t pitch_pidController = {0};
+pidController_t roll_pidController = {0};
 
 /* USER CODE END PV */
 
@@ -140,6 +145,10 @@ int main(void)
  config_motors();
  config_wireless();
  wait_for_pair();
+pid_init(&roll_pidController);
+pid_init(&yaw_pidController);
+pid_init(&pitch_pidController);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -150,7 +159,6 @@ int main(void)
 	  rcv_channel();
 	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
 	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
-fjsdflkdsfh
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
