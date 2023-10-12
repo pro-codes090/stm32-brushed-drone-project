@@ -21,9 +21,10 @@ pidController->out      	  = 0 ;
 float pid_update(pidController_t* pidController , float setPoint ,float measuremnt ) {
 
 	// get the Error
-	float error = setPoint = measuremnt ;
+	float error = setPoint - measuremnt ;
 	// proportional controller
 	float proportional = error*pidController->p_gain ;
+
 	// integrator controller
 	pidController->intgrator = pidController->intgrator + ((pidController->i_gain*pidController->sampling_time)/ 2)*(error + pidController->prevErrro) ;
 	// integral anti wind up
@@ -35,7 +36,7 @@ float pid_update(pidController_t* pidController , float setPoint ,float measurem
 	}
 
 	// Derivative controller using derevative on measurement
-	pidController->derevative = ((2*pidController->d_gain)*(measuremnt -pidController->prevMeasurment)
+	pidController->derevative = -((2*pidController->d_gain)*(measuremnt -pidController->prevMeasurment)
 								+ pidController->derevative*(2*pidController->filter_sampling_time - pidController->sampling_time))
 								/ (pidController->sampling_time + 2*pidController->filter_sampling_time) ;
 

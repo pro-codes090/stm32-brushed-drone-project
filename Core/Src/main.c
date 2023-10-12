@@ -43,6 +43,16 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MAX_ALLOWED_THROTTLE_INPUT 950
+#define MIN_ALLOWED_THROTTLE_INPUT 512
+#define MAX_ALLOWED_YAW_INPUT      60
+#define MAX_ALLOWED_PITCH_INPUT    60
+#define MAX_ALLOWED_ROLL_INPUT     60
+
+#define MIN_ALLOWED_YAW_INPUT     -60
+#define MIN_ALLOWED_PITCH_INPUT   -60
+#define MIN_ALLOWED_ROLL_INPUT    -60
+
 
 /* USER CODE END PD */
 
@@ -78,6 +88,12 @@ transmitter_chanels_t recived_channels = {0} ;
 pidController_t yaw_pidController = {0};
 pidController_t pitch_pidController = {0};
 pidController_t roll_pidController = {0};
+
+// calculated motor output varaibles
+uint16_t m1_out = 0 ;
+uint16_t m2_out = 0 ;
+uint16_t m3_out = 0 ;
+uint16_t m4_out = 0 ;
 
 /* USER CODE END PV */
 
@@ -142,12 +158,43 @@ int main(void)
 
  fc_powerup();
  config_gyro();
- config_motors();
- config_wireless();
- wait_for_pair();
-pid_init(&roll_pidController);
-pid_init(&yaw_pidController);
-pid_init(&pitch_pidController);
+// config_motors();
+// config_wireless();
+// wait_for_pair();
+ pid_init(&roll_pidController);
+ pid_init(&yaw_pidController);
+ pid_init(&pitch_pidController);
+
+ yaw_pidController.p_gain 				= 6  ;
+ yaw_pidController.i_gain               = 10 ;
+ yaw_pidController.d_gain               = 15 ;
+ yaw_pidController.filter_sampling_time = 0.01  ;
+ yaw_pidController.sampling_time        = 0.001 ;
+ yaw_pidController.limitMax             =  75 ;
+ yaw_pidController.limitMin             =  0  ;
+ yaw_pidController.limitMaxInt          =  80;
+ yaw_pidController.limitMinInt          = -80;
+
+ roll_pidController.p_gain 				 = 6  ;
+ roll_pidController.i_gain               = 10 ;
+ roll_pidController.d_gain               = 15 ;
+ roll_pidController.filter_sampling_time = 0.01  ;
+ roll_pidController.sampling_time        = 0.001 ;
+ roll_pidController.limitMax             =  75 ;
+ roll_pidController.limitMin             =  0  ;
+ roll_pidController.limitMaxInt          =  80;
+ roll_pidController.limitMinInt          = -80;
+
+ pitch_pidController.p_gain 			  = 6  ;
+ pitch_pidController.i_gain               = 10 ;
+ pitch_pidController.d_gain               = 15 ;
+ pitch_pidController.filter_sampling_time = 0.01  ;
+ pitch_pidController.sampling_time        = 0.001 ;
+ pitch_pidController.limitMax             =  75 ;
+ pitch_pidController.limitMin             =  0  ;
+ pitch_pidController.limitMaxInt          =  80;
+ pitch_pidController.limitMinInt          = -80;
+
 
   /* USER CODE END 2 */
 
@@ -156,9 +203,58 @@ pid_init(&pitch_pidController);
   while (1)
   {
 
-	  rcv_channel();
-	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
-	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+//	  rcv_channel();
+	  get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+
+	  printf("Roll : %d  ,Pitch: %d  ,Yaw : %d \r" , Gyro_Data.pitch , Gyro_Data.yaw , Gyro_Data.roll ) ;
+
+//	  // limit the throttle channel to have some margins for pid corrections
+//	  if (recived_channels.Throtle > MAX_ALLOWED_THROTTLE_INPUT) {
+//		  recived_channels.Throtle = MAX_ALLOWED_THROTTLE_INPUT ;
+//	     }
+//	  else if (recived_channels.Throtle < MIN_ALLOWED_THROTTLE_INPUT) {
+//			  recived_channels.Throtle = 0 ;
+//		}
+//
+//	  // limit the yaw channel to have some margins for pid corrections
+//	  if (recived_channels.Yaw > MAX_ALLOWED_YAW_INPUT) {
+//		  recived_channels.Yaw = MAX_ALLOWED_YAW_INPUT;
+//	     }
+//	  else if (recived_channels.Yaw < MIN_ALLOWED_YAW_INPUT) {
+//	      recived_channels.Yaw = MIN_ALLOWED_YAW_INPUT;
+//		}
+//
+//	  // limit the roll channel to have some margins for pid corrections
+//	  if (recived_channels.Roll > MAX_ALLOWED_ROLL_INPUT) {
+//		  recived_channels.Roll = MAX_ALLOWED_ROLL_INPUT ;
+//	     }
+//	  else if (recived_channels.Roll < MIN_ALLOWED_ROLL_INPUT) {
+//		  recived_channels.Roll= MIN_ALLOWED_ROLL_INPUT;
+//		}
+//
+//	  // limit the pitch channel to have some margins for pid corrections
+//	  if (recived_channels.Pitch > MAX_ALLOWED_PITCH_INPUT) {
+//		  recived_channels.Pitch = MAX_ALLOWED_PITCH_INPUT ;
+//	     }
+//	  else if (recived_channels.Pitch < MIN_ALLOWED_PITCH_INPUT) {
+//		  recived_channels.Pitch = MIN_ALLOWED_PITCH_INPUT;
+//		}
+//
+//	  pid_update(&pitch_pidController,recived_channels.Pitch ,Gyro_Data.pitch ) ;
+//	  pid_update(&yaw_pidController,recived_channels.Yaw   ,Gyro_Data.yaw ) ;
+//	  pid_update(&roll_pidController,recived_channels.Roll  ,Gyro_Data.roll ) ;
+//
+//	  m1_out = recived_channels.Throtle - pitch_pidController.out - yaw_pidController.out - roll_pidController.out5222222222 ;
+//	  m2_out = recived_channels.Throtle + pitch_pidController.out + yaw_pidController.out - roll_pidController.out ;
+//	  m3_out = recived_channels.Throtle + pitch_pidController.out - yaw_pidController.out + roll_pidController.out ;
+//	  m4_out = recived_channels.Throtle - pitch_pidController.out + yaw_pidController.out + roll_pidController.out ;
+//
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1, m1_out) ;
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2, m2_out) ;
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3, m3_out) ;
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4, m4_out) ;
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -297,9 +393,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 500;
+  htim1.Init.Prescaler = 32;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 64;
+  htim1.Init.Period = 1000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -324,7 +420,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 6400;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
