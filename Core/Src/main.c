@@ -137,9 +137,9 @@ int main(void)
 
  fc_powerup();
  config_gyro();
- config_motors();
- config_wireless();
- wait_for_pair();
+// config_motors();
+// config_wireless();
+// wait_for_pair();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -147,9 +147,13 @@ int main(void)
   while (1)
   {
 
-	  rcv_channel();
-//	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
-//	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+//	  rcv_channel();
+////	  printf("Roll : %hi  ,Pitch: %hi  ,Throttle: %hi  ,Yaw : %hi  \n" , recived_channels.Roll , recived_channels.Pitch,
+////	  																		  recived_channels.Throtle ,recived_channels.Yaw) ;
+
+	  get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+printf("%d,%d,%d \r" , Gyro_Data.roll , Gyro_Data.pitch, Gyro_Data.yaw) ;
+
 
     /* USER CODE END WHILE */
 
