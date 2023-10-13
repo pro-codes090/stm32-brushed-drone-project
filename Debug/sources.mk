@@ -26,6 +26,7 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/STM32F1xx_HAL_Driver/Src \
+Filters \
 mpu6050_driver \
 pid \
 sx1278_lora \

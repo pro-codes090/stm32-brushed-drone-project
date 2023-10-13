@@ -1,0 +1,2 @@
+../Filters/RC_Filters.c:11:6:filter_init	32	static
+../Filters/RC_Filters.c:25:7:filter_update	24	static

@@ -12,6 +12,7 @@ RM := rm -rf
 -include sx1278_lora/subdir.mk
 -include pid/subdir.mk
 -include mpu6050_driver/subdir.mk
+-include Filters/subdir.mk
 -include Drivers/STM32F1xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk

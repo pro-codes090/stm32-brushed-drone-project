@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "RC_Filters.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -90,6 +91,8 @@ pidController_t yaw_pidController = {0};
 pidController_t pitch_pidController = {0};
 pidController_t roll_pidController = {0};
 
+// filter variables
+filter_t lowpass = {0} ;
 // calculated motor output varaibles
 uint16_t m1_out = 0 ;
 uint16_t m2_out = 0 ;
@@ -159,13 +162,14 @@ int main(void)
 
  fc_powerup();
  config_gyro();
-// config_motors();
-// config_wireless();
-// wait_for_pair();
+ config_motors();
+ config_wireless();
+ wait_for_pair();
  pid_init(&roll_pidController);
  pid_init(&yaw_pidController);
  pid_init(&pitch_pidController);
-
+ // here we are having 50hz cutoff freq and 0.002 sec of sampling time i.e 2ms
+ filter_init(&lowpass, 50, 0.002 ) ;
  yaw_pidController.p_gain 				= 10  ;
  yaw_pidController.i_gain               = 0 ;
  yaw_pidController.d_gain               = 0 ;
@@ -203,9 +207,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-//	  rcv_channel();
+	  rcv_channel();
 	  get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+	  // low pass all the gyro data
+	  Gyro_Data.pitch =  filter_update(&lowpass, Gyro_Data.pitch ) ;
+	  Gyro_Data.yaw =  filter_update(&lowpass, Gyro_Data.yaw) ;
+	  Gyro_Data.roll =  filter_update(&lowpass, Gyro_Data.roll) ;
 
 	  printf(" %f  , %f  ,  %f \r" , Gyro_Data.pitch , Gyro_Data.yaw , Gyro_Data.roll ) ;
 
