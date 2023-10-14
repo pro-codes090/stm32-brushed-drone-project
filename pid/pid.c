@@ -55,5 +55,5 @@ float pid_update(pidController_t* pidController , float setPoint ,float measurem
 	}
 pidController->prevErrro = error ;
 pidController->prevMeasurment = measuremnt;
-
+ return pidController->out;
 }

@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "RC_Filters.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,6 +26,7 @@
 #include "mpu6050_driver.h"
 #include "lora.h"
 #include "pid.h"
+#include "RC_Filters.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,17 +44,17 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_ALLOWED_THROTTLE_INPUT 950
+#define MAX_ALLOWED_THROTTLE_INPUT 750 // leave 25% margin for all channels for pid corretions
 #define MIN_ALLOWED_THROTTLE_INPUT 512
-#define MAX_ALLOWED_YAW_INPUT      60
-#define MAX_ALLOWED_PITCH_INPUT    60
-#define MAX_ALLOWED_ROLL_INPUT     60
+#define MAX_ALLOWED_YAW_INPUT      94
+#define MAX_ALLOWED_PITCH_INPUT    94
+#define MAX_ALLOWED_ROLL_INPUT     94
 
-#define MIN_ALLOWED_YAW_INPUT     -60
-#define MIN_ALLOWED_PITCH_INPUT   -60
-#define MIN_ALLOWED_ROLL_INPUT    -60
+#define MIN_ALLOWED_YAW_INPUT     -94
+#define MIN_ALLOWED_PITCH_INPUT   -94
+#define MIN_ALLOWED_ROLL_INPUT    -94
 
-#define PID_OUT_CONVERTER 0.5f
+#define PID_OUT_CONVERTER 0.8f
 
 /* USER CODE END PD */
 
@@ -169,36 +169,36 @@ int main(void)
  pid_init(&yaw_pidController);
  pid_init(&pitch_pidController);
  // here we are having 50hz cutoff freq and 0.002 sec of sampling time i.e 2ms
- filter_init(&lowpass, 50, 0.002 ) ;
+ filter_init(&lowpass, 10, 0.01 ) ;
  yaw_pidController.p_gain 				= 10  ;
- yaw_pidController.i_gain               = 0 ;
- yaw_pidController.d_gain               = 0 ;
+ yaw_pidController.i_gain               = 5 ;
+ yaw_pidController.d_gain               = 5 ;
  yaw_pidController.filter_sampling_time = 0.01  ;
- yaw_pidController.sampling_time        = 0.001 ;
- yaw_pidController.limitMax             = 250   ;
- yaw_pidController.limitMin             = -250  ;
- yaw_pidController.limitMaxInt          = 300;
- yaw_pidController.limitMinInt          = -300;
+ yaw_pidController.sampling_time        = 0.004 ;
+ yaw_pidController.limitMax             = 125   ;
+ yaw_pidController.limitMin             = -125  ;
+ yaw_pidController.limitMaxInt          = 150;
+ yaw_pidController.limitMinInt          = -150;
 
  roll_pidController.p_gain 				 = 10;
- roll_pidController.i_gain               = 0 ;
- roll_pidController.d_gain               = 0 ;
+ roll_pidController.i_gain               = 5 ;
+ roll_pidController.d_gain               = 5 ;
  roll_pidController.filter_sampling_time = 0.01  ;
- roll_pidController.sampling_time        = 0.001 ;
- roll_pidController.limitMax             =  250 ;
- roll_pidController.limitMin             = -250 ;
- roll_pidController.limitMaxInt          =  300 ;
- roll_pidController.limitMinInt          = -300 ;
+ roll_pidController.sampling_time        = 0.004 ;
+ roll_pidController.limitMax             =  125 ;
+ roll_pidController.limitMin             = -125 ;
+ roll_pidController.limitMaxInt          =  150 ;
+ roll_pidController.limitMinInt          = -150 ;
 
  pitch_pidController.p_gain 			  = 10  ;
- pitch_pidController.i_gain               = 0 ;
- pitch_pidController.d_gain               = 0 ;
+ pitch_pidController.i_gain               = 5 ;
+ pitch_pidController.d_gain               = 5 ;
  pitch_pidController.filter_sampling_time = 0.01  ;
- pitch_pidController.sampling_time        = 0.001 ;
- pitch_pidController.limitMax             =  250 ;
- pitch_pidController.limitMin             = -250 ;
- pitch_pidController.limitMaxInt          =  300;
- pitch_pidController.limitMinInt          = -300;
+ pitch_pidController.sampling_time        = 0.004 ;
+ pitch_pidController.limitMax             =  125 ;
+ pitch_pidController.limitMin             = -125 ;
+ pitch_pidController.limitMaxInt          =  150;
+ pitch_pidController.limitMinInt          = -150;
 
 
   /* USER CODE END 2 */
@@ -214,53 +214,38 @@ int main(void)
 	  Gyro_Data.yaw =  filter_update(&lowpass, Gyro_Data.yaw) ;
 	  Gyro_Data.roll =  filter_update(&lowpass, Gyro_Data.roll) ;
 
-	  printf(" %f  , %f  ,  %f \r" , Gyro_Data.pitch , Gyro_Data.yaw , Gyro_Data.roll ) ;
-
-	  // limit the throttle channel to have some margins for pid corrections
-	  if (recived_channels.Throtle > MAX_ALLOWED_THROTTLE_INPUT) {
-		  recived_channels.Throtle = MAX_ALLOWED_THROTTLE_INPUT ;
-	     }
-	  else if (recived_channels.Throtle < MIN_ALLOWED_THROTTLE_INPUT) {
-			  recived_channels.Throtle = 0 ;
-		}
-
-	  // limit the yaw channel to have some margins for pid corrections
-	  if (recived_channels.Yaw > MAX_ALLOWED_YAW_INPUT) {
-		  recived_channels.Yaw = MAX_ALLOWED_YAW_INPUT;
-	     }
-	  else if (recived_channels.Yaw < MIN_ALLOWED_YAW_INPUT) {
-	      recived_channels.Yaw = MIN_ALLOWED_YAW_INPUT;
-		}
-
-	  // limit the roll channel to have some margins for pid corrections
-	  if (recived_channels.Roll > MAX_ALLOWED_ROLL_INPUT) {
-		  recived_channels.Roll = MAX_ALLOWED_ROLL_INPUT ;
-	     }
-	  else if (recived_channels.Roll < MIN_ALLOWED_ROLL_INPUT) {
-		  recived_channels.Roll= MIN_ALLOWED_ROLL_INPUT;
-		}
-
-	  // limit the pitch channel to have some margins for pid corrections
-	  if (recived_channels.Pitch > MAX_ALLOWED_PITCH_INPUT) {
-		  recived_channels.Pitch = MAX_ALLOWED_PITCH_INPUT ;
-	     }
-	  else if (recived_channels.Pitch < MIN_ALLOWED_PITCH_INPUT) {
-		  recived_channels.Pitch = MIN_ALLOWED_PITCH_INPUT;
-		}
-
 	  pid_update(&pitch_pidController,recived_channels.Pitch ,Gyro_Data.pitch ) ;
 	  pid_update(&yaw_pidController,recived_channels.Yaw   ,Gyro_Data.yaw ) ;
 	  pid_update(&roll_pidController,recived_channels.Roll  ,Gyro_Data.roll ) ;
 
-	  m1_out = (recived_channels.Throtle - pitch_pidController.out - yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
-	  m2_out = (recived_channels.Throtle + pitch_pidController.out + yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
-	  m3_out = (recived_channels.Throtle + pitch_pidController.out - yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
-	  m4_out = (recived_channels.Throtle - pitch_pidController.out + yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
+	  if ((recived_channels.Throtle ) < 500) {
+			  recived_channels.Throtle = 500 ;
+		}
 
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1, m1_out) ;
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2, m2_out) ;
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3, m3_out) ;
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4, m4_out) ;
+	  recived_channels.Throtle =  recived_channels.Throtle - 500 ;
+	  if ((recived_channels.Throtle ) <=0) {
+		  recived_channels.Throtle = 0 ;
+	  }
+
+
+	  printf("%d ,%d  \r" ,recived_channels.Throtle   , 0) ;
+	  m1_out = (recived_channels.Throtle /10 );
+	  m3_out = (recived_channels.Throtle /10);
+
+//	  m1_out = (recived_channels.Throtle - pitch_pidController.out - yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
+//	  m2_out = (recived_channels.Throtle + pitch_pidController.out + yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
+//	  m3_out = (recived_channels.Throtle + pitch_pidController.out - yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
+//	  m4_out = (recived_channels.Throtle - pitch_pidController.out + yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
+
+	  // TIM channel 3 is m1
+	  // TIM channel 4 is m4
+	  // TIm channel 2 is m3
+	  // TIm channel 1 is m2
+
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1, m2_out) ;
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2, m3_out) ;
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3, m1_out) ;
+//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4, m4_out) ;
 
 
     /* USER CODE END WHILE */
@@ -401,9 +386,9 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
+  htim1.Init.Prescaler = 32000;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 32000;
+  htim1.Init.Period = 1000;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -428,7 +413,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 6400;
+  sConfigOC.Pulse = 0;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
