@@ -44,8 +44,8 @@ typedef struct {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_ALLOWED_THROTTLE_INPUT 750 // leave 25% margin for all channels for pid corretions
-#define MIN_ALLOWED_THROTTLE_INPUT 512
+#define MAX_ALLOWED_THROTTLE_INPUT 800 // leave 20% margin for all channels for pid corretions
+#define MIN_ALLOWED_THROTTLE_INPUT 504
 #define MAX_ALLOWED_YAW_INPUT      94
 #define MAX_ALLOWED_PITCH_INPUT    94
 #define MAX_ALLOWED_ROLL_INPUT     94
@@ -54,7 +54,7 @@ typedef struct {
 #define MIN_ALLOWED_PITCH_INPUT   -94
 #define MIN_ALLOWED_ROLL_INPUT    -94
 
-#define PID_OUT_CONVERTER 0.8f
+#define PID_OUT_CONVERTER 0.517f
 
 /* USER CODE END PD */
 
@@ -84,9 +84,16 @@ lora_pins_t lora_pins;		// Structure variable for lora pins
 lora_t lora;				// Structure variable for lora
 uint8_t ret = 0  ;			// captures the return value from the functions in lora lib
 uint8_t buff [15] = {0} ; //buffer to accumulate all the data
+
 // raw transmitter received values
 transmitter_chanels_t recived_channels = {0} ;
+// value of transmitter to use
+int16_t Throttle = 0 ;
+int16_t Pitch    = 0 ;
+int16_t Yaw      = 0 ;
+int16_t Roll     = 0 ;
 
+// pid structs
 pidController_t yaw_pidController = {0};
 pidController_t pitch_pidController = {0};
 pidController_t roll_pidController = {0};
@@ -98,6 +105,9 @@ uint16_t m1_out = 0 ;
 uint16_t m2_out = 0 ;
 uint16_t m3_out = 0 ;
 uint16_t m4_out = 0 ;
+
+// isArmed variable
+uint8_t isArmed  = 0 ;
 
 /* USER CODE END PV */
 
@@ -117,7 +127,9 @@ void rcv_channel();
 void config_motors() ;
 void config_gyro() ;
 void wait_for_pair() ;
-void check_if_under_range() ;
+void limit_radio_inputs() ;
+void load_pid() ;
+void wait_for_arming() ;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -160,46 +172,17 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
- fc_powerup();
- config_gyro();
- config_motors();
- config_wireless();
- wait_for_pair();
- pid_init(&roll_pidController);
+ fc_powerup(); 					// some loed blinking indication to see if the board boots or not
+ config_gyro(); 				// configure the gyroscope
+ config_motors(); 				// timer pwm settings for mototrs
+ config_wireless();				// configure wireless lora module
+ wait_for_pair();				// wait while the trasmitter is getting paired
+ pid_init(&roll_pidController);	// pid init function call for roll pitch and yaw
  pid_init(&yaw_pidController);
  pid_init(&pitch_pidController);
  // here we are having 50hz cutoff freq and 0.002 sec of sampling time i.e 2ms
- filter_init(&lowpass, 10, 0.01 ) ;
- yaw_pidController.p_gain 				= 10  ;
- yaw_pidController.i_gain               = 5 ;
- yaw_pidController.d_gain               = 5 ;
- yaw_pidController.filter_sampling_time = 0.01  ;
- yaw_pidController.sampling_time        = 0.004 ;
- yaw_pidController.limitMax             = 125   ;
- yaw_pidController.limitMin             = -125  ;
- yaw_pidController.limitMaxInt          = 150;
- yaw_pidController.limitMinInt          = -150;
-
- roll_pidController.p_gain 				 = 10;
- roll_pidController.i_gain               = 5 ;
- roll_pidController.d_gain               = 5 ;
- roll_pidController.filter_sampling_time = 0.01  ;
- roll_pidController.sampling_time        = 0.004 ;
- roll_pidController.limitMax             =  125 ;
- roll_pidController.limitMin             = -125 ;
- roll_pidController.limitMaxInt          =  150 ;
- roll_pidController.limitMinInt          = -150 ;
-
- pitch_pidController.p_gain 			  = 10  ;
- pitch_pidController.i_gain               = 5 ;
- pitch_pidController.d_gain               = 5 ;
- pitch_pidController.filter_sampling_time = 0.01  ;
- pitch_pidController.sampling_time        = 0.004 ;
- pitch_pidController.limitMax             =  125 ;
- pitch_pidController.limitMin             = -125 ;
- pitch_pidController.limitMaxInt          =  150;
- pitch_pidController.limitMinInt          = -150;
-
+ filter_init(&lowpass, 1000, 0.0025 ) ; // loaw pass filter init function call
+ load_pid() ;         					// pid setting for p,i,d gains and other limits
 
   /* USER CODE END 2 */
 
@@ -207,46 +190,34 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  rcv_channel();
-	  get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;
+	  rcv_channel();								// start receiving data from radio transitter
+	  get_gyro(&hi2c1, &Gyro_Data, &Gyro_Calib) ;	// get the gyro data yaw ,pitch , roll
 	  // low pass all the gyro data
-	  Gyro_Data.pitch =  filter_update(&lowpass, Gyro_Data.pitch ) ;
+	  Gyro_Data.pitch =  filter_update(&lowpass, Gyro_Data.pitch ) ; // low pass filter all gyro signals
 	  Gyro_Data.yaw =  filter_update(&lowpass, Gyro_Data.yaw) ;
 	  Gyro_Data.roll =  filter_update(&lowpass, Gyro_Data.roll) ;
 
-	  pid_update(&pitch_pidController,recived_channels.Pitch ,Gyro_Data.pitch ) ;
-	  pid_update(&yaw_pidController,recived_channels.Yaw   ,Gyro_Data.yaw ) ;
-	  pid_update(&roll_pidController,recived_channels.Roll  ,Gyro_Data.roll ) ;
+	  limit_radio_inputs() ;	// apply limits for radio input
 
-	  if ((recived_channels.Throtle ) < 500) {
-			  recived_channels.Throtle = 500 ;
-		}
+	 // wait for arming
+	  wait_for_arming() ;
 
-	  recived_channels.Throtle =  recived_channels.Throtle - 500 ;
-	  if ((recived_channels.Throtle ) <=0) {
-		  recived_channels.Throtle = 0 ;
-	  }
+	  m1_out = (recived_channels.Throtle - roll_pidController.out - pitch_pidController.out - yaw_pidController.out )*PID_OUT_CONVERTER;
+	  m2_out = (recived_channels.Throtle - roll_pidController.out + pitch_pidController.out + yaw_pidController.out )*PID_OUT_CONVERTER;
+	  m3_out = (recived_channels.Throtle + roll_pidController.out + pitch_pidController.out - yaw_pidController.out )*PID_OUT_CONVERTER;
+	  m4_out = (recived_channels.Throtle + roll_pidController.out - pitch_pidController.out + yaw_pidController.out )*PID_OUT_CONVERTER;
 
+	  // TIM channel 3 is m3
+	  // TIM channel 4 is m2
+	  // TIm channel 2 is m1
+	  // TIm channel 1 is m4
+	  if (isArmed  == 1 ) {
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2, m1_out) ;
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4, m2_out) ;
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3, m3_out) ;
+	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1, m4_out) ;
 
-	  printf("%d ,%d  \r" ,recived_channels.Throtle   , 0) ;
-	  m1_out = (recived_channels.Throtle /10 );
-	  m3_out = (recived_channels.Throtle /10);
-
-//	  m1_out = (recived_channels.Throtle - pitch_pidController.out - yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
-//	  m2_out = (recived_channels.Throtle + pitch_pidController.out + yaw_pidController.out - roll_pidController.out )*PID_OUT_CONVERTER;
-//	  m3_out = (recived_channels.Throtle + pitch_pidController.out - yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
-//	  m4_out = (recived_channels.Throtle - pitch_pidController.out + yaw_pidController.out + roll_pidController.out )*PID_OUT_CONVERTER;
-
-	  // TIM channel 3 is m1
-	  // TIM channel 4 is m4
-	  // TIm channel 2 is m3
-	  // TIm channel 1 is m2
-
-//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_1, m2_out) ;
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_2, m3_out) ;
-	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_3, m1_out) ;
-//	  __HAL_TIM_SET_COMPARE(&htim1 ,TIM_CHANNEL_4, m4_out) ;
-
+	}
 
     /* USER CODE END WHILE */
 
@@ -413,7 +384,7 @@ static void MX_TIM1_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 6400;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
@@ -464,12 +435,12 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 500;
+  htim2.Init.Prescaler = 3200;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 64;
+  htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  if (HAL_TIM_OC_Init(&htim2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -479,33 +450,17 @@ static void MX_TIM2_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 160;
+  sConfigOC.OCMode = TIM_OCMODE_TIMING;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.Pulse = 80;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.Pulse = 40;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.Pulse = 20;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  if (HAL_TIM_OC_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
   {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
 
 }
 
@@ -720,9 +675,49 @@ HAL_Delay(1000) ;
 
 }
 
-void check_if_under_range() {
+void limit_radio_inputs() {
+
+Throttle = recived_channels.Throtle - MIN_ALLOWED_THROTTLE_INPUT ;
+	if (Throttle < MIN_ALLOWED_THROTTLE_INPUT) {
+		Throttle = MIN_ALLOWED_THROTTLE_INPUT ;
+	} else if(Throttle > MAX_ALLOWED_THROTTLE_INPUT){
+		Throttle = MAX_ALLOWED_THROTTLE_INPUT ;
+	}
+
+	if (Pitch < MIN_ALLOWED_PITCH_INPUT) {
+		Pitch = MIN_ALLOWED_PITCH_INPUT ;
+	} else if(Pitch > MAX_ALLOWED_PITCH_INPUT){
+		Pitch = MAX_ALLOWED_PITCH_INPUT ;
+	}
+
+	if (Yaw < MIN_ALLOWED_YAW_INPUT) {
+		Yaw = MIN_ALLOWED_YAW_INPUT ;
+	} else if(Throttle > MAX_ALLOWED_YAW_INPUT){
+		Yaw = MAX_ALLOWED_YAW_INPUT ;
+	}
+
+	if (Roll < MIN_ALLOWED_ROLL_INPUT) {
+		Roll = MIN_ALLOWED_ROLL_INPUT ;
+	} else if(Pitch > MAX_ALLOWED_ROLL_INPUT){
+		Roll = MAX_ALLOWED_ROLL_INPUT ;
+	}
 
 }
+
+void wait_for_arming() {
+	if (!isArmed) {
+
+		if (((Pitch < -125 ) && (Pitch >= -128)) &&  ((Roll < -125 ) && (Roll >= -128)) && ((Yaw < -125 ) && (Yaw >= -128))) {
+			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3) ;
+			__HAL_TIM_SET_COMPARE(&htim3 , TIM_CHANNEL_3 ,16000);
+			HAL_Delay(1000) ;
+			HAL_Delay(1000) ;
+			HAL_Delay(1000) ;
+			isArmed = 1 ;
+		}
+	}
+}
+
 void config_wireless(){
 	lora_pins.dio0.port  = LORA_DIO0_PORT;
 	lora_pins.dio0.pin   = LORA_DIO0_PIN;
@@ -739,6 +734,39 @@ void config_wireless(){
 	HAL_Delay(1000);
 	}
 	printf("init success \n");
+
+}
+
+void load_pid() {
+	 yaw_pidController.p_gain 				= 2  ;
+	 yaw_pidController.i_gain               = 10 ;
+	 yaw_pidController.d_gain               = 20 ;
+	 yaw_pidController.filter_sampling_time = 0.004  ;
+	 yaw_pidController.sampling_time        = 0.004 ;
+	 yaw_pidController.limitMax             = 125   ;
+	 yaw_pidController.limitMin             = -125  ;
+	 yaw_pidController.limitMaxInt          = 150;
+	 yaw_pidController.limitMinInt          = -150;
+
+	 roll_pidController.p_gain 				 = 2;
+	 roll_pidController.i_gain               = 0 ;
+	 roll_pidController.d_gain               = 0 ;
+	 roll_pidController.filter_sampling_time = 0.004  ;
+	 roll_pidController.sampling_time        = 0.004 ;
+	 roll_pidController.limitMax             =  125 ;
+	 roll_pidController.limitMin             = -125 ;
+	 roll_pidController.limitMaxInt          =  150 ;
+	 roll_pidController.limitMinInt          = -150 ;
+
+	 pitch_pidController.p_gain 			  = 2  ;
+	 pitch_pidController.i_gain               = 0 ;
+	 pitch_pidController.d_gain               = 0 ;
+	 pitch_pidController.filter_sampling_time = 0.004  ;
+	 pitch_pidController.sampling_time        = 0.004 ;
+	 pitch_pidController.limitMax             =  125 ;
+	 pitch_pidController.limitMin             = -125 ;
+	 pitch_pidController.limitMaxInt          =  150;
+	 pitch_pidController.limitMinInt          = -150;
 
 }
 
@@ -761,10 +789,14 @@ void rcv_channel(){
 
 }
 
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	if (htim->Instance == TIM2 ) {
 
-// for pid calculations
+	  pid_update(&pitch_pidController,Pitch ,Gyro_Data.pitch ) ;
+	  pid_update(&yaw_pidController  ,Yaw   ,Gyro_Data.yaw ) ;
+	  pid_update(&roll_pidController ,Roll  ,Gyro_Data.roll ) ;
+
+	}
 }
 
 void __io_putchar(int ch) {
